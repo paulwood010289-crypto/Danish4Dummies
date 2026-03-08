@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dansk Flashcards</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #f5f0e8;
+      --warm-brown: #5a4a3a;
+      --light-brown: #b09070;
+      --card-bg: #fff8ee;
+      --card-border: #e0d0b8;
+      --correct: #3a7d5a;
+      --correct-bg: #eaf5ef;
+      --correct-border: #a8d4b8;
+      --wrong: #b84040;
+      --wrong-bg: #faeaea;
+      --wrong-border: #e0a0a0;
+      --neutral-hover: #ede4d4;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--cream);
+      background-image:
+        radial-gradient(circle at 15% 15%, #e8d5b0 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, #c9dde8 0%, transparent 45%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2.5rem 1rem 3rem;
+      font-family: 'Source Sans 3', sans-serif;
+      gap: 1.6rem;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--warm-brown);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .score-bar {
+      display: flex;
+      gap: 1.4rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: #9a8a7a;
+    }
+
+    .score-bar span { display: flex; align-items: center; gap: 0.3rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-correct { background: var(--correct); }
+    .dot-wrong   { background: var(--wrong); }
+
+    .progress-wrap {
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .progress-label {
+      font-size: 0.72rem;
+      color: #9a8a7a;
+      letter-spacing: 0.08em;
+      text-align: right;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: #ddd5c5;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--warm-brown);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .card {
+      width: 340px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem 2rem 1.6rem;
+      box-shadow: 0 8px 32px rgba(90,74,58,0.12), 0 2px 8px rgba(90,74,58,0.07);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: cardIn 0.35s ease;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-type-badge {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.22rem 0.65rem;
+      border-radius: 20px;
+      margin-bottom: 0.2rem;
+    }
+    .badge-translate { background: #e8ddd0; color: #7a6a5a; }
+    .badge-letter    { background: #dde8e0; color: #3a6a50; }
+    .badge-sentence  { background: #dde0ee; color: #3a4a7a; }
+
+    .card-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--light-brown);
+    }
+
+    .card-word {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      color: #3a2e22;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .card-word.single   { font-size: 3rem; }
+    .card-word.phrase   { font-size: 2rem; }
+    .card-word.sentence { font-size: 1.2rem; font-weight: 400; font-style: italic; line-height: 1.6; }
+
+    .blank-underline {
+      display: inline-block;
+      min-width: 2.2rem;
+      border-bottom: 2.5px solid var(--warm-brown);
+      margin: 0 0.1em;
+      vertical-align: baseline;
+    }
+
+    .card-hint {
+      font-size: 0.75rem;
+      color: #b0a090;
+      font-style: italic;
+      margin-top: 0.1rem;
+      text-align: center;
+    }
+
+    .choices {
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .choice-btn {
+      width: 100%;
+      padding: 0.75rem 1.1rem;
+      border: 1.5px solid var(--card-border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.95rem;
+      color: #3a2e22;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .choice-btn:nth-child(1) { animation-delay: 0.05s; }
+    .choice-btn:nth-child(2) { animation-delay: 0.10s; }
+    .choice-btn:nth-child(3) { animation-delay: 0.15s; }
+    .choice-btn:nth-child(4) { animation-delay: 0.20s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .choice-btn:not(:disabled):hover {
+      background: var(--neutral-hover);
+      border-color: #c8b89a;
+      transform: translateX(3px);
+    }
+
+    .choice-letter {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--light-brown);
+      min-width: 1rem;
+    }
+
+    .choice-btn.correct {
+      background: var(--correct-bg);
+      border-color: var(--correct-border);
+      color: var(--correct);
+      font-weight: 600;
+    }
+    .choice-btn.correct .choice-letter { color: var(--correct); }
+
+    .choice-btn.wrong {
+      background: var(--wrong-bg);
+      border-color: var(--wrong-border);
+      color: var(--wrong);
+    }
+    .choice-btn.wrong .choice-letter { color: var(--wrong); }
+    .choice-btn:disabled { cursor: default; transform: none; }
+
+    .result-msg {
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      min-height: 1.2rem;
+      color: transparent;
+      transition: color 0.2s;
+    }
+    .result-msg.show-correct { color: var(--correct); }
+    .result-msg.show-wrong   { color: var(--wrong); }
+
+    .next-btn {
+      width: 340px;
+      padding: 0.85rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--warm-brown);
+      color: #f5f0e8;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.88rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .next-btn.visible { opacity: 1; pointer-events: all; }
+    .next-btn:hover { background: #3a2e22; }
+
+    .summary {
+      width: 340px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 8px 32px rgba(90,74,58,0.12);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      text-align: center;
+      animation: cardIn 0.4s ease;
+    }
+    .summary.show { display: flex; }
+
+    .summary h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: #3a2e22;
+    }
+
+    .big-score {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      font-weight: 700;
+      color: var(--warm-brown);
+      line-height: 1;
+    }
+
+    .summary .sub { font-size: 0.82rem; color: #9a8a7a; letter-spacing: 0.06em; }
+    .summary-stats { display: flex; gap: 2rem; }
+    .stat { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+    .stat .num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; }
+    .stat .lbl { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #9a8a7a; }
+    .stat.c .num { color: var(--correct); }
+    .stat.w .num { color: var(--wrong); }
+
+    .restart-btn {
+      padding: 0.75rem 2rem;
+      border: 1.5px solid var(--warm-brown);
+      border-radius: 10px;
+      background: transparent;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--warm-brown);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .restart-btn:hover { background: var(--warm-brown); color: #f5f0e8; }
+
+    .game-area { display: flex; flex-direction: column; align-items: center; gap: 1.6rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Dansk · Flashcards</h1>
+  <div class="score-bar">
+    <span><i class="dot dot-correct"></i> <span id="sc-correct">0</span> correct</span>
+    <span><i class="dot dot-wrong"></i> <span id="sc-wrong">0</span> wrong</span>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-label" id="prog-label">1 / 40</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:2.5%"></div></div>
+</div>
+
+<div class="game-area" id="game-area">
+  <div class="card" id="card">
+    <span class="card-type-badge" id="card-badge"></span>
+    <span class="card-label" id="card-label"></span>
+    <span class="card-word" id="card-word"></span>
+    <span class="card-hint" id="card-hint"></span>
+  </div>
+
+  <div class="choices" id="choices"></div>
+  <div class="result-msg" id="result-msg"></div>
+  <button class="next-btn" id="next-btn" onclick="nextCard()">Next card →</button>
+</div>
+
+<div class="summary" id="summary">
+  <h2>Session complete</h2>
+  <div class="big-score" id="pct">0%</div>
+  <div class="sub">of answers correct</div>
+  <div class="summary-stats">
+    <div class="stat c"><div class="num" id="sum-correct">0</div><div class="lbl">Correct</div></div>
+    <div class="stat w"><div class="num" id="sum-wrong">0</div><div class="lbl">Wrong</div></div>
+  </div>
+  <button class="restart-btn" onclick="restart()">Try again</button>
+</div>
+
+<script>
+  // ── Word bank ──────────────────────────────────────────────────────────────
+  const allWords = [
+    { danish: "Hund",       english: "Dog" },
+    { danish: "Kat",        english: "Cat" },
+    { danish: "Hus",        english: "House" },
+    { danish: "Vand",       english: "Water" },
+    { danish: "Brød",       english: "Bread" },
+    { danish: "Bog",        english: "Book" },
+    { danish: "Bil",        english: "Car" },
+    { danish: "Barn",       english: "Child" },
+    { danish: "Mand",       english: "Man" },
+    { danish: "Kvinde",     english: "Woman" },
+    { danish: "Dag",        english: "Day" },
+    { danish: "Nat",        english: "Night" },
+    { danish: "Sol",        english: "Sun" },
+    { danish: "Måne",       english: "Moon" },
+    { danish: "Skov",       english: "Forest" },
+    { danish: "Hav",        english: "Sea" },
+    { danish: "Tid",        english: "Time" },
+    { danish: "År",         english: "Year" },
+    { danish: "Stor",       english: "Big" },
+    { danish: "Lille",      english: "Small" },
+    { danish: "Mad",        english: "Food" },
+    { danish: "Fugl",       english: "Bird" },
+    { danish: "Fisk",       english: "Fish" },
+    { danish: "Skole",      english: "School" },
+    { danish: "Vej",        english: "Road" },
+    { danish: "Navn",       english: "Name" },
+    { danish: "Kold",       english: "Cold" },
+    { danish: "Varm",       english: "Warm" },
+    { danish: "Hurtig",     english: "Fast" },
+    { danish: "Gammel",     english: "Old" },
+    { danish: "Mere vand",  english: "More water" },
+    { danish: "Stort hus",  english: "Big house" },
+    { danish: "Lille barn", english: "Small child" },
+    { danish: "God dag",    english: "Good day" },
+    { danish: "God nat",    english: "Good night" },
+    { danish: "Frisk brød", english: "Fresh bread" },
+    { danish: "Sort kat",   english: "Black cat" },
+    { danish: "Hurtig bil", english: "Fast car" },
+    { danish: "Gammel bog", english: "Old book" },
+    { danish: "Varm mad",   english: "Warm food" },
+  ];
+
+  // ── Sentence bank ──────────────────────────────────────────────────────────
+  // template: Danish sentence with ___ as blank
+  // blank: the correct Danish word
+  // distractors: 3 wrong Danish options
+  // hint: English gloss with ___ for the blank
+  const sentences = [
+    { template: "___ løber hurtigt.",        blank: "Hunden",  distractors: ["Bogen",   "Vandet",  "Skolen"],  hint: "The ___ runs fast." },
+    { template: "Jeg læser en ___.",          blank: "bog",     distractors: ["bil",     "sol",     "fugl"],    hint: "I am reading a ___." },
+    { template: "Kan jeg få mere ___?",       blank: "vand",    distractors: ["brød",    "dag",     "navn"],    hint: "Can I have more ___?" },
+    { template: "Barnet leger i ___.",        blank: "skoven",  distractors: ["manden",  "bilen",   "natten"],  hint: "The child plays in the ___." },
+    { template: "Vi ser på ___ i nat.",       blank: "månen",   distractors: ["huset",   "brødet",  "vejen"],   hint: "We are looking at the ___ tonight." },
+    { template: "Katten sover på ___.",       blank: "huset",   distractors: ["havet",   "fuglen",  "bogen"],   hint: "The cat sleeps on the ___." },
+    { template: "Det er en ___ dag i dag.",   blank: "god",     distractors: ["lille",   "kold",    "gammel"],  hint: "It is a ___ day today." },
+    { template: "Fuglen synger om ___.",      blank: "natten",  distractors: ["skolen",  "manden",  "vejen"],   hint: "The bird sings about the ___." },
+    { template: "Hun spiser varmt ___.",      blank: "brød",    distractors: ["vand",    "år",      "navn"],    hint: "She eats warm ___." },
+    { template: "Manden kører en ___ bil.",   blank: "hurtig",  distractors: ["gammel",  "stor",    "kold"],    hint: "The man drives a ___ car." },
+    { template: "Vi bor i et stort ___.",     blank: "hus",     distractors: ["hav",     "fugl",    "skov"],    hint: "We live in a big ___." },
+    { template: "___ skinner i dag.",         blank: "Solen",   distractors: ["Hunden",  "Bogen",   "Bilen"],   hint: "The ___ is shining today." },
+  ];
+
+  // ── Letter pools ───────────────────────────────────────────────────────────
+  const VOWELS     = ["a","e","i","o","u","y","æ","ø","å"];
+  const CONSONANTS = ["b","c","d","f","g","h","j","k","l","m","n","p","r","s","t","v"];
+  const ALL_ALPHA  = [...VOWELS, ...CONSONANTS];
+  const LETTERS    = ["A","B","C","D"];
+
+  let deck = [], current = 0, correct = 0, wrong = 0, answered = false;
+  let seenAnswers = new Set();
+
+  // ── Utils ──────────────────────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ── Build deck — assign one of 3 types per card ───────────────────────────
+  function buildDeck() {
+    const shuffledWords = shuffle(allWords);
+    const shuffledSents = shuffle(sentences);
+    let sIdx = 0;
+
+    return shuffledWords.map(word => {
+      const roll = Math.random();
+
+      // Sentence type: ~25% chance, cycle through sentences
+      if (roll < 0.25) {
+        const sent = shuffledSents[sIdx % shuffledSents.length];
+        sIdx++;
+        return { type: "sentence", word, sent };
+      }
+
+      // Letter type: ~30% chance, only for single words 3+ chars
+      if (roll < 0.55 && !word.danish.includes(" ") && word.danish.length >= 3) {
+        return { type: "letter", word };
+      }
+
+      // Translate (default)
+      return { type: "translate", word };
+    });
+  }
+
+  // ── Missing-letter logic ───────────────────────────────────────────────────
+  function buildLetterCard(word) {
+    const chars = [...word.danish]; // preserve chars (handles ø, å etc.)
+    const lower = chars.map(c => c.toLowerCase());
+
+    // Choose letter category randomly
+    const roll = Math.random();
+    let pool;
+    if (roll < 0.33)      pool = VOWELS;
+    else if (roll < 0.66) pool = CONSONANTS;
+    else                  pool = ALL_ALPHA;
+
+    // Find eligible positions (characters in this word that exist in pool)
+    const eligibleIdx = lower.map((c, i) => pool.includes(c) ? i : -1).filter(i => i >= 0);
+
+    // Fallback to any alpha if pool yields nothing
+    const useIdx = eligibleIdx.length
+      ? eligibleIdx
+      : lower.map((c, i) => ALL_ALPHA.includes(c) ? i : -1).filter(i => i >= 0);
+
+    const hideIdx = useIdx[Math.floor(Math.random() * useIdx.length)];
+    const hiddenChar = lower[hideIdx];
+
+    // Distractor letters: same pool, different char, up to 3
+    const distPool = (eligibleIdx.length ? pool : ALL_ALPHA).filter(c => c !== hiddenChar);
+    const wrongLetters = shuffle(distPool).slice(0, 3);
+    const choices = shuffle([hiddenChar, ...wrongLetters]);
+
+    // Display parts: null = blank slot
+    const displayParts = chars.map((c, i) => i === hideIdx ? null : c);
+
+    return { hiddenChar, displayParts, choices };
+  }
+
+  // ── Render current card ────────────────────────────────────────────────────
+  function renderCard() {
+    answered = false;
+    const entry = deck[current];
+
+    const cardEl    = document.getElementById("card");
+    const badgeEl   = document.getElementById("card-badge");
+    const labelEl   = document.getElementById("card-label");
+    const wordEl    = document.getElementById("card-word");
+    const hintEl    = document.getElementById("card-hint");
+    const choicesEl = document.getElementById("choices");
+    const msgEl     = document.getElementById("result-msg");
+
+    // Animate
+    cardEl.style.animation = "none";
+    void cardEl.offsetWidth;
+    cardEl.style.animation = "";
+
+    // Progress
+    const pct = Math.max(2.5, Math.round((current / deck.length) * 100));
+    document.getElementById("prog-fill").style.width = pct + "%";
+    document.getElementById("prog-label").textContent = `${current + 1} / ${deck.length}`;
+
+    msgEl.textContent = "";
+    msgEl.className = "result-msg";
+    document.getElementById("next-btn").className = "next-btn";
+    choicesEl.innerHTML = "";
+
+    // ── TRANSLATE ──────────────────────────────────────────────────────────
+    if (entry.type === "translate") {
+      const word = entry.word;
+      badgeEl.textContent = "Translate";
+      badgeEl.className = "card-type-badge badge-translate";
+      labelEl.textContent = "Danish → English";
+      wordEl.className = "card-word " + (word.danish.includes(" ") ? "phrase" : "single");
+      wordEl.textContent = word.danish;
+      wordEl.innerHTML = wordEl.textContent; // plain text
+      hintEl.textContent = "";
+
+      const pool = allWords.filter(w => w.english !== word.english && !seenAnswers.has(w.english)).map(w => w.english);
+      const fallback = allWords.filter(w => w.english !== word.english).map(w => w.english);
+      const src = pool.length >= 3 ? pool : fallback;
+      const choices = shuffle([word.english, ...shuffle(src).slice(0, 3)]);
+
+      renderChoices(choicesEl, choices, word.english, () => seenAnswers.add(word.english));
+    }
+
+    // ── MISSING LETTER ─────────────────────────────────────────────────────
+    else if (entry.type === "letter") {
+      const word = entry.word;
+      const { hiddenChar, displayParts, choices } = buildLetterCard(word);
+
+      badgeEl.textContent = "Missing Letter";
+      badgeEl.className = "card-type-badge badge-letter";
+      labelEl.textContent = "Which letter is missing?";
+      wordEl.className = "card-word single";
+
+      // Build display with blank underline span
+      wordEl.innerHTML = displayParts.map(c =>
+        c === null
+          ? `<span class="blank-underline">&nbsp;</span>`
+          : c
+      ).join("");
+
+      hintEl.textContent = `"${word.english}" in Danish`;
+
+      renderChoices(choicesEl, choices, hiddenChar, null);
+    }
+
+    // ── SENTENCE FILL ──────────────────────────────────────────────────────
+    else if (entry.type === "sentence") {
+      const { sent } = entry;
+
+      badgeEl.textContent = "Fill the Blank";
+      badgeEl.className = "card-type-badge badge-sentence";
+      labelEl.textContent = "Choose the missing word";
+      wordEl.className = "card-word sentence";
+
+      // Replace ___ with a styled underline span
+      const parts = sent.template.split("___");
+      wordEl.innerHTML = parts[0] + `<span class="blank-underline">&nbsp;&nbsp;&nbsp;</span>` + (parts[1] || "");
+
+      hintEl.textContent = sent.hint;
+
+      const choices = shuffle([sent.blank, ...sent.distractors]);
+      renderChoices(choicesEl, choices, sent.blank, null);
+    }
+  }
+
+  // ── Render choice buttons ──────────────────────────────────────────────────
+  function renderChoices(container, choices, correctAnswer, onReveal) {
+    choices.forEach((choice, i) => {
+      const btn = document.createElement("button");
+      btn.className = "choice-btn";
+      btn.innerHTML = `<span class="choice-letter">${LETTERS[i]}</span>${choice}`;
+      btn.onclick = () => handleAnswer(btn, choice, correctAnswer, onReveal);
+      container.appendChild(btn);
+    });
+  }
+
+  // ── Handle answer ──────────────────────────────────────────────────────────
+  function handleAnswer(clickedBtn, chosen, correctAnswer, onReveal) {
+    if (answered) return;
+    answered = true;
+
+    if (onReveal) onReveal();
+
+    document.querySelectorAll(".choice-btn").forEach(btn => {
+      btn.disabled = true;
+      const text = btn.querySelector(".choice-letter").nextSibling.textContent.trim();
+      if (text === correctAnswer && btn !== clickedBtn) btn.classList.add("correct");
+    });
+
+    const msg = document.getElementById("result-msg");
+    if (chosen === correctAnswer) {
+      clickedBtn.classList.add("correct");
+      correct++;
+      document.getElementById("sc-correct").textContent = correct;
+      msg.textContent = "✓ Correct!";
+      msg.className = "result-msg show-correct";
+    } else {
+      clickedBtn.classList.add("wrong");
+      wrong++;
+      document.getElementById("sc-wrong").textContent = wrong;
+      msg.textContent = `✗ Answer: ${correctAnswer}`;
+      msg.className = "result-msg show-wrong";
+    }
+
+    document.getElementById("next-btn").className = "next-btn visible";
+  }
+
+  function nextCard() {
+    current++;
+    if (current >= deck.length) showSummary();
+    else renderCard();
+  }
+
+  function showSummary() {
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("prog-fill").style.width = "100%";
+    document.getElementById("prog-label").textContent = `${deck.length} / ${deck.length}`;
+    const total = correct + wrong;
+    const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+    document.getElementById("pct").textContent = pct + "%";
+    document.getElementById("sum-correct").textContent = correct;
+    document.getElementById("sum-wrong").textContent = wrong;
+    document.getElementById("summary").className = "summary show";
+  }
+
+  function restart() {
+    correct = 0; wrong = 0;
+    seenAnswers.clear();
+    document.getElementById("sc-correct").textContent = 0;
+    document.getElementById("sc-wrong").textContent = 0;
+    document.getElementById("summary").className = "summary";
+    document.getElementById("game-area").style.display = "flex";
+    init();
+  }
+
+  function init() {
+    deck = buildDeck();
+    current = 0;
+    seenAnswers.clear();
+    renderCard();
+  }
+
+  init();
+</script>
+</body>
+</html>
