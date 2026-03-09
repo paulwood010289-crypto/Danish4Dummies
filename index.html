@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dansk Flashcards</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --lvl-bg:#f5f0e8; --lvl-card:#fff8ee; --lvl-border:#e0d0b8;
+      --lvl-accent:#5a4a3a; --lvl-light:#b09070; --lvl-hover:#ede4d4;
+      --lvl-grad1:#e8d5b0; --lvl-grad2:#c9dde8;
+      --correct:#3a7d5a; --correct-bg:#eaf5ef; --correct-border:#a8d4b8;
+      --wrong:#b84040;   --wrong-bg:#faeaea;   --wrong-border:#e0a0a0;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      min-height:100vh; background-color:var(--lvl-bg);
+      background-image:radial-gradient(circle at 15% 15%,var(--lvl-grad1) 0%,transparent 45%),
+                       radial-gradient(circle at 85% 85%,var(--lvl-grad2) 0%,transparent 45%);
+      display:flex; flex-direction:column; align-items:center;
+      padding:2.2rem 1rem 3rem; font-family:'Source Sans 3',sans-serif;
+      gap:1.2rem; transition:background-color .6s;
+    }
+    header{display:flex;flex-direction:column;align-items:center;gap:.3rem;}
+    h1{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:400;
+       color:var(--lvl-accent);letter-spacing:.18em;text-transform:uppercase;transition:color .6s;}
+    .level-indicator{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+       color:var(--lvl-light);font-weight:600;transition:color .6s;}
+    .score-bar{display:flex;gap:1.4rem;font-size:.78rem;letter-spacing:.06em;color:var(--lvl-light);transition:color .6s;}
+    .score-bar span{display:flex;align-items:center;gap:.3rem;}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    .dot-correct{background:var(--correct);} .dot-wrong{background:var(--wrong);}
+    .pip-track{display:flex;gap:.35rem;margin-top:.15rem;}
+    .pip{width:9px;height:9px;border-radius:50%;background:var(--lvl-border);
+         border:1.5px solid var(--lvl-light);transition:background .2s,border-color .2s;}
+    .pip.done-correct{background:var(--correct);border-color:var(--correct);}
+    .pip.done-wrong{background:var(--wrong);border-color:var(--wrong);}
+    .pip.current{background:var(--lvl-accent);border-color:var(--lvl-accent);}
+    .progress-wrap{width:340px;display:flex;flex-direction:column;gap:.3rem;transition:width .3s;}
+    .progress-wrap.wide{width:460px;}
+    .progress-label{font-size:.72rem;color:var(--lvl-light);letter-spacing:.08em;text-align:right;transition:color .6s;}
+    .progress-track{width:100%;height:4px;background:var(--lvl-border);border-radius:2px;overflow:hidden;}
+    .progress-fill{height:100%;background:var(--lvl-accent);border-radius:2px;transition:width .4s ease,background .6s;}
+    .card{width:340px;background:var(--lvl-card);border:1.5px solid var(--lvl-border);border-radius:16px;
+          padding:2rem 2rem 1.6rem;box-shadow:0 8px 32px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.06);
+          display:flex;flex-direction:column;align-items:center;gap:.5rem;
+          animation:cardIn .35s ease;transition:width .3s,background .6s,border-color .6s;}
+    .card.reading-card{width:460px;align-items:flex-start;padding:1.8rem 2rem 1.6rem;}
+    @keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .card-type-badge{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;font-weight:600;
+       padding:.22rem .65rem;border-radius:20px;margin-bottom:.2rem;align-self:center;}
+    .badge-translate{background:#e8ddd0;color:#7a6a5a;}
+    .badge-letter{background:#dde8e0;color:#3a6a50;}
+    .badge-sentence{background:#dde0ee;color:#3a4a7a;}
+    .badge-reading{background:#ede0cc;color:#7a5a2a;}
+    .card-label{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
+       color:var(--lvl-light);align-self:center;transition:color .6s;}
+    .card-word{font-family:'Playfair Display',serif;font-weight:700;color:var(--lvl-accent);
+       line-height:1.2;text-align:center;transition:color .6s;}
+    .card-word.single{font-size:3rem;}
+    .card-word.phrase{font-size:2rem;}
+    .card-word.sentence{font-size:1.15rem;font-weight:400;font-style:italic;line-height:1.65;}
+    .blank-underline{display:inline-block;min-width:2rem;border-bottom:2.5px solid var(--lvl-accent);
+       margin:0 .1em;vertical-align:baseline;}
+    .reading-passage{width:100%;background:color-mix(in srgb,var(--lvl-border) 40%,white);
+       border-left:3px solid var(--lvl-light);border-radius:0 8px 8px 0;padding:.9rem 1rem;
+       font-family:'Playfair Display',serif;font-size:1rem;line-height:1.75;color:var(--lvl-accent);
+       margin:.4rem 0 .8rem;transition:background .6s,border-color .6s,color .6s;}
+    .reading-question{width:100%;font-size:.9rem;font-weight:600;color:var(--lvl-accent);
+       line-height:1.5;padding:0 .1rem;transition:color .6s;}
+    .card-hint{font-size:.75rem;color:var(--lvl-light);font-style:italic;margin-top:.1rem;
+       text-align:center;align-self:center;transition:color .6s;}
+    .choices{width:340px;display:flex;flex-direction:column;gap:.45rem;transition:width .3s;}
+    .choices.wide{width:460px;}
+    .choices.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;}
+    .choice-btn{width:100%;padding:.65rem .9rem;border:1.5px solid var(--lvl-border);border-radius:10px;
+       background:var(--lvl-card);font-family:'Source Sans 3',sans-serif;font-size:.9rem;
+       color:var(--lvl-accent);cursor:pointer;text-align:left;display:flex;align-items:center;
+       gap:.6rem;transition:background .15s,border-color .15s,transform .1s,color .6s;
+       animation:fadeUp .28s ease both;line-height:1.35;}
+    .choice-btn:nth-child(1){animation-delay:.03s} .choice-btn:nth-child(2){animation-delay:.06s}
+    .choice-btn:nth-child(3){animation-delay:.09s} .choice-btn:nth-child(4){animation-delay:.12s}
+    .choice-btn:nth-child(5){animation-delay:.15s} .choice-btn:nth-child(6){animation-delay:.18s}
+    .choice-btn:nth-child(7){animation-delay:.21s} .choice-btn:nth-child(8){animation-delay:.24s}
+    .choice-btn:nth-child(9){animation-delay:.27s} .choice-btn:nth-child(10){animation-delay:.30s}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .choice-btn:not(:disabled):hover{background:var(--lvl-hover);border-color:var(--lvl-light);transform:translateX(2px);}
+    .choice-letter{font-size:.65rem;font-weight:600;letter-spacing:.1em;color:var(--lvl-light);
+       min-width:.9rem;flex-shrink:0;transition:color .6s;}
+    .choice-btn.correct{background:var(--correct-bg);border-color:var(--correct-border);color:var(--correct);font-weight:600;}
+    .choice-btn.correct .choice-letter{color:var(--correct);}
+    .choice-btn.wrong{background:var(--wrong-bg);border-color:var(--wrong-border);color:var(--wrong);}
+    .choice-btn.wrong .choice-letter{color:var(--wrong);}
+    .choice-btn:disabled{cursor:default;transform:none;}
+    .result-msg{font-size:.82rem;font-weight:600;letter-spacing:.05em;min-height:1.2rem;
+       color:transparent;transition:color .2s;}
+    .result-msg.show-correct{color:var(--correct);}
+    .result-msg.show-wrong{color:var(--wrong);}
+    .next-btn{width:340px;padding:.85rem;border:none;border-radius:10px;background:var(--lvl-accent);
+       color:#f5f0e8;font-family:'Source Sans 3',sans-serif;font-size:.88rem;letter-spacing:.12em;
+       text-transform:uppercase;cursor:pointer;transition:background .15s,opacity .15s,width .3s;
+       opacity:0;pointer-events:none;}
+    .next-btn.wide{width:460px;}
+    .next-btn.visible{opacity:1;pointer-events:all;}
+    .next-btn:hover{opacity:.85;}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;
+       justify-content:center;z-index:100;animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .overlay-box{width:320px;background:var(--lvl-card);border:1.5px solid var(--lvl-border);
+       border-radius:20px;padding:2.4rem 2rem;display:flex;flex-direction:column;align-items:center;
+       gap:1rem;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.25);
+       animation:popIn .35s cubic-bezier(.175,.885,.32,1.275);}
+    @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+    .overlay-icon{font-size:3rem;line-height:1;}
+    .overlay-title{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--lvl-accent);font-weight:700;}
+    .overlay-sub{font-size:.85rem;color:var(--lvl-light);line-height:1.5;}
+    .overlay-score{font-family:'Playfair Display',serif;font-size:3rem;font-weight:700;line-height:1;}
+    .overlay-score.pass{color:var(--correct);}
+    .overlay-score.fail{color:var(--wrong);}
+    .overlay-btn{width:100%;padding:.85rem;border:none;border-radius:10px;background:var(--lvl-accent);
+       color:#f5f0e8;font-family:'Source Sans 3',sans-serif;font-size:.88rem;letter-spacing:.12em;
+       text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+    .overlay-btn:hover{opacity:.85;}
+    .summary{width:340px;background:var(--lvl-card);border:1.5px solid var(--lvl-border);
+       border-radius:16px;padding:2.5rem 2rem;box-shadow:0 8px 32px rgba(0,0,0,.10);
+       display:none;flex-direction:column;align-items:center;gap:1.1rem;text-align:center;
+       animation:cardIn .4s ease;}
+    .summary.show{display:flex;}
+    .summary h2{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--lvl-accent);}
+    .big-score{font-family:'Playfair Display',serif;font-size:4rem;font-weight:700;color:var(--lvl-accent);line-height:1;}
+    .summary .sub{font-size:.82rem;color:var(--lvl-light);letter-spacing:.06em;}
+    .summary-stats{display:flex;gap:2rem;}
+    .stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;}
+    .stat .num{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;}
+    .stat .lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--lvl-light);}
+    .stat.c .num{color:var(--correct);} .stat.w .num{color:var(--wrong);}
+    .restart-btn{padding:.75rem 2rem;border:1.5px solid var(--lvl-accent);border-radius:10px;
+       background:transparent;font-family:'Source Sans 3',sans-serif;font-size:.85rem;
+       letter-spacing:.1em;text-transform:uppercase;color:var(--lvl-accent);cursor:pointer;
+       transition:background .15s,color .15s;}
+    .restart-btn:hover{background:var(--lvl-accent);color:#f5f0e8;}
+    .game-area{display:flex;flex-direction:column;align-items:center;gap:1.4rem;}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Dansk · Flashcards</h1>
+  <div class="level-indicator" id="level-indicator">Level 1 · Beginner</div>
+  <div class="score-bar">
+    <span><i class="dot dot-correct"></i> <span id="sc-correct">0</span> correct</span>
+    <span><i class="dot dot-wrong"></i> <span id="sc-wrong">0</span> wrong</span>
+  </div>
+  <div class="pip-track" id="pip-track"></div>
+</header>
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-label" id="prog-label">Card 1 of 10</div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+<div class="game-area" id="game-area">
+  <div class="card" id="card">
+    <span class="card-type-badge" id="card-badge"></span>
+    <span class="card-label" id="card-label"></span>
+    <span class="card-word" id="card-word"></span>
+    <span class="card-hint" id="card-hint"></span>
+  </div>
+  <div class="choices" id="choices"></div>
+  <div class="result-msg" id="result-msg"></div>
+  <button class="next-btn" id="next-btn" onclick="nextCard()">Next →</button>
+</div>
+<div class="summary" id="summary">
+  <h2>Course Complete!</h2>
+  <div class="big-score" id="final-pct">0%</div>
+  <div class="sub">overall accuracy across all 7 levels</div>
+  <div class="summary-stats">
+    <div class="stat c"><div class="num" id="sum-correct">0</div><div class="lbl">Correct</div></div>
+    <div class="stat w"><div class="num" id="sum-wrong">0</div><div class="lbl">Wrong</div></div>
+  </div>
+  <button class="restart-btn" onclick="restartAll()">Start Over</button>
+</div>
+<script>
+const THEMES=[
+  {bg:"#f5f0e8",card:"#fff8ee",border:"#e0d0b8",accent:"#5a4a3a",light:"#b09070",hover:"#ede4d4",grad1:"#e8d5b0",grad2:"#c9dde8",name:"Beginner"},
+  {bg:"#eaf0f7",card:"#f4f8fd",border:"#c0d4ea",accent:"#2d4f7a",light:"#6a90bb",hover:"#dce8f5",grad1:"#b8d0e8",grad2:"#dce8f8",name:"Elementary"},
+  {bg:"#eaf3ec",card:"#f4faf5",border:"#b8d8bc",accent:"#2d5e38",light:"#5a9a6a",hover:"#d8eedd",grad1:"#b8d8c0",grad2:"#d0ecd5",name:"Pre-Intermediate"},
+  {bg:"#faf3e8",card:"#fdf8f0",border:"#e0c88a",accent:"#7a5510",light:"#b8900a",hover:"#f5e8c0",grad1:"#e8d090",grad2:"#f5e8b8",name:"Intermediate"},
+  {bg:"#f7eeea",card:"#fdf5f2",border:"#ddb8a8",accent:"#7a3820",light:"#b06040",hover:"#f0ddd5",grad1:"#e8c0a8",grad2:"#f0d5c8",name:"Upper-Intermediate"},
+  {bg:"#ede8f5",card:"#f6f2fd",border:"#c8b0e0",accent:"#4a2878",light:"#8a58b8",hover:"#e0d4f5",grad1:"#c8a8e0",grad2:"#ddd0f5",name:"Advanced"},
+  {bg:"#f5f0e0",card:"#fdfaf0",border:"#d0b850",accent:"#6a5000",light:"#a08020",hover:"#f0e8b8",grad1:"#e0cc70",grad2:"#f0e8a0",name:"Mastery"},
+];
+
+const LEVELS=[
+  // L1 Beginner — translate only, 4 options
+  {optionCount:4,cards:[
+    {type:"translate",danish:"Hund",english:"Dog",hint:"noun"},
+    {type:"translate",danish:"Kat",english:"Cat",hint:"noun"},
+    {type:"translate",danish:"Hus",english:"House",hint:"noun"},
+    {type:"translate",danish:"Vand",english:"Water",hint:"noun"},
+    {type:"translate",danish:"Brød",english:"Bread",hint:"noun"},
+    {type:"translate",danish:"Bog",english:"Book",hint:"noun"},
+    {type:"translate",danish:"Bil",english:"Car",hint:"noun"},
+    {type:"translate",danish:"Sol",english:"Sun",hint:"noun"},
+    {type:"translate",danish:"Dag",english:"Day",hint:"noun"},
+    {type:"translate",danish:"Nat",english:"Night",hint:"noun"},
+  ]},
+  // L2 Elementary — nouns + adjectives + missing letter, 4 options
+  {optionCount:4,cards:[
+    {type:"translate",danish:"Mand",english:"Man",hint:"noun · common"},
+    {type:"translate",danish:"Kvinde",english:"Woman",hint:"noun · common"},
+    {type:"translate",danish:"Barn",english:"Child",hint:"noun · neuter"},
+    {type:"translate",danish:"Stor",english:"Big",hint:"adjective"},
+    {type:"translate",danish:"Lille",english:"Small",hint:"adjective"},
+    {type:"letter",danish:"Skov",english:"Forest",hint:"noun · common"},
+    {type:"letter",danish:"Måne",english:"Moon",hint:"noun · common"},
+    {type:"letter",danish:"Fugl",english:"Bird",hint:"noun · common"},
+    {type:"letter",danish:"Fisk",english:"Fish",hint:"noun · common"},
+    {type:"letter",danish:"Varm",english:"Warm",hint:"adjective"},
+  ]},
+  // L3 Pre-Intermediate — phrases + fill-blank, 8 options
+  {optionCount:8,cards:[
+    {type:"translate",danish:"Mere vand",english:"More water",hint:"phrase"},
+    {type:"translate",danish:"God dag",english:"Good day",hint:"greeting"},
+    {type:"translate",danish:"God nat",english:"Good night",hint:"greeting"},
+    {type:"translate",danish:"Sort kat",english:"Black cat",hint:"phrase"},
+    {type:"translate",danish:"Hurtig bil",english:"Fast car",hint:"phrase"},
+    {type:"sentence",template:"Jeg læser en ___.",blank:"bog",
+     distractors:["bil","sol","fugl","hund","vand","dag","nat"],hint:"I am reading a ___."},
+    {type:"sentence",template:"___ løber hurtigt.",blank:"Hunden",
+     distractors:["Bogen","Vandet","Solen","Bilen","Katten","Manden","Fuglen"],hint:"The ___ runs fast."},
+    {type:"sentence",template:"Kan jeg få mere ___?",blank:"vand",
+     distractors:["brød","dag","navn","fugl","bil","nat","sol"],hint:"Can I have more ___."},
+    {type:"letter",danish:"Hurtig",english:"Fast",hint:"adjective"},
+    {type:"letter",danish:"Gammel",english:"Old",hint:"adjective"},
+  ]},
+  // L4 Intermediate — harder vocab, no hints, 8 options
+  {optionCount:8,cards:[
+    {type:"translate",danish:"Arbejde",english:"Work",hint:""},
+    {type:"translate",danish:"Lykke",english:"Happiness",hint:""},
+    {type:"translate",danish:"Frisk",english:"Fresh",hint:""},
+    {type:"translate",danish:"Rejse",english:"Journey",hint:""},
+    {type:"translate",danish:"Drøm",english:"Dream",hint:""},
+    {type:"sentence",template:"Barnet leger i ___.",blank:"skoven",
+     distractors:["manden","bilen","natten","huset","havet","vejen","skolen"],hint:""},
+    {type:"sentence",template:"Vi ser på ___ i nat.",blank:"månen",
+     distractors:["huset","brødet","vejen","solen","havet","skoven","fuglen"],hint:""},
+    {type:"sentence",template:"Manden kører en ___ bil.",blank:"hurtig",
+     distractors:["gammel","stor","kold","frisk","lille","varm","ny"],hint:""},
+    {type:"letter",danish:"Arbejde",english:"Work",hint:""},
+    {type:"letter",danish:"Rejse",english:"Journey",hint:""},
+  ]},
+  // L5 Upper-Intermediate — abstract vocab + reading, 10 options
+  {optionCount:10,cards:[
+    {type:"translate",danish:"Fremtid",english:"Future",hint:""},
+    {type:"translate",danish:"Fortid",english:"Past",hint:""},
+    {type:"translate",danish:"Kærlighed",english:"Love",hint:""},
+    {type:"translate",danish:"Frihed",english:"Freedom",hint:""},
+    {type:"sentence",template:"Hun ___ til skolen hver dag.",blank:"går",
+     distractors:["løber","flyver","svømmer","kører","sidder","læser","synger","hopper","sover"],hint:""},
+    {type:"sentence",template:"Jeg kan ikke finde min ___.",blank:"bog",
+     distractors:["hund","bil","hat","nøgle","ven","rejse","drøm","lykke","frihed"],hint:""},
+    {type:"reading",
+     passage:"Lars arbejder hver dag. Han rejser langt til sit arbejde. Om aftenen er han træt, men glad.",
+     question:"How does Lars feel in the evening?",
+     answer:"Tired but happy",
+     distractors:["Angry and frustrated","Full of energy","Sad and lonely","Bored and restless","Confused and lost","Excited and restless","Very hungry","Proud but nervous","Hopeful but worried"]},
+    {type:"reading",
+     passage:"Anna har en drøm. Hun vil rejse til et fremmed land. Hun sparer penge op til sin rejse.",
+     question:"What is Anna saving money for?",
+     answer:"A journey to a foreign country",
+     distractors:["A new house","A fast car","A collection of books","Her dog's food","School fees","A sailing boat","Warm food","A new bicycle","New clothes"]},
+    {type:"letter",danish:"Kærlighed",english:"Love",hint:""},
+    {type:"letter",danish:"Fremtid",english:"Future",hint:""},
+  ]},
+  // L6 Advanced — abstract + complex reading, 10 options
+  {optionCount:10,cards:[
+    {type:"translate",danish:"Bevidsthed",english:"Consciousness",hint:""},
+    {type:"translate",danish:"Tillid",english:"Trust",hint:""},
+    {type:"translate",danish:"Nysgerrig",english:"Curious",hint:""},
+    {type:"translate",danish:"Skuffelse",english:"Disappointment",hint:""},
+    {type:"translate",danish:"Sammenhæng",english:"Context",hint:""},
+    {type:"sentence",template:"Det kræver meget ___ at lære et nyt sprog.",blank:"tålmodighed",
+     distractors:["penge","tid","lykke","tillid","frihed","arbejde","drøm","rejse","kærlighed"],hint:""},
+    {type:"sentence",template:"Hun udtrykte sin ___ over resultatet.",blank:"skuffelse",
+     distractors:["lykke","tillid","frihed","drøm","kærlighed","fremtid","bevidsthed","nysgerrighed","sammenhæng"],hint:""},
+    {type:"reading",
+     passage:"Tillid er grundlaget for ethvert forhold. Uden tillid er det svært at arbejde sammen eller elske hinanden. Det tager tid at opbygge tillid, men det kan brydes på et øjeblik.",
+     question:"According to the passage, what can be broken in an instant?",
+     answer:"Trust",
+     distractors:["Love","Teamwork","A relationship","Consciousness","Freedom","A dream","Language","Patience","Curiosity"]},
+    {type:"reading",
+     passage:"Nysgerrighed driver mennesket fremad. Det er ønsket om at forstå verden, der har ført til store opdagelser. En nysgerrig person stiller altid spørgsmål.",
+     question:"What drives humanity forward, according to the text?",
+     answer:"Curiosity",
+     distractors:["Fear","Money","Love","Trust","Freedom","Disappointment","Language","Patience","Hard work"]},
+    {type:"letter",danish:"Tillid",english:"Trust",hint:""},
+    {type:"letter",danish:"Nysgerrig",english:"Curious",hint:""},
+  ]},
+  // L7 Mastery — literary, idiomatic, 10 options
+  {optionCount:10,cards:[
+    {type:"translate",danish:"Vemod",english:"Melancholy",hint:""},
+    {type:"translate",danish:"Længsel",english:"Longing",hint:""},
+    {type:"translate",danish:"Fornuft",english:"Reason",hint:""},
+    {type:"translate",danish:"Overvældende",english:"Overwhelming",hint:""},
+    {type:"sentence",template:"Han stod ved vinduet og følte en dyb ___.",blank:"længsel",
+     distractors:["vemod","fornuft","tillid","skuffelse","lykke","kærlighed","frihed","nysgerrighed","bevidsthed"],hint:""},
+    {type:"sentence",template:"Det er svært at handle med ___ når følelserne er stærke.",blank:"fornuft",
+     distractors:["længsel","vemod","tillid","kærlighed","frihed","skuffelse","overvældning","drøm","fremtid"],hint:""},
+    {type:"reading",
+     passage:"Vemod er en særlig dansk følelse — en blanding af sorg og skønhed. Det er følelsen af at savne noget, man aldrig helt kan gribe. Mange danske digtere har skrevet om vemod som en del af den menneskelige erfaring.",
+     question:"How is 'vemod' best described in the passage?",
+     answer:"A mix of sorrow and beauty",
+     distractors:["Pure happiness","Anger at loss","Fear of the future","A longing for home","Complete despair","A rational state of mind","Overwhelming joy","Confusion about identity","Nostalgia for childhood","Quiet contentment"]},
+    {type:"reading",
+     passage:"Fornuft og følelse har altid været i konflikt. De gamle grækere troede, at fornuften skulle styre mennesket. Men moderne psykologi viser, at følelser spiller en langt større rolle i vores beslutninger, end vi tror.",
+     question:"What does modern psychology suggest about emotions?",
+     answer:"They play a larger role in decisions than we think",
+     distractors:["They should always be suppressed","They are fully controlled by reason","They are less important than logic","They only affect unstable people","They disappear with education","They are a sign of weakness","They originate purely in language","They can be completely understood","They have no place in science","They diminish with age"]},
+    {type:"letter",danish:"Vemod",english:"Melancholy",hint:""},
+    {type:"letter",danish:"Længsel",english:"Longing",hint:""},
+  ]},
+];
+
+const VOWELS=["a","e","i","o","u","y","æ","ø","å"];
+const CONSONANTS=["b","c","d","f","g","h","j","k","l","m","n","p","r","s","t","v"];
+const ALL_ALPHA=[...VOWELS,...CONSONANTS];
+const ALPHA_LABELS="ABCDEFGHIJ".split("");
+
+let currentLevel=0,levelDeck=[],cardIndex=0;
+let levelCorrect=0,levelWrong=0,totalCorrect=0,totalWrong=0;
+let answered=false,seenAnswers=new Set();
+const pipResults=[];
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function applyTheme(i){
+  const t=THEMES[i],r=document.documentElement.style;
+  r.setProperty("--lvl-bg",t.bg); r.setProperty("--lvl-card",t.card);
+  r.setProperty("--lvl-border",t.border); r.setProperty("--lvl-accent",t.accent);
+  r.setProperty("--lvl-light",t.light); r.setProperty("--lvl-hover",t.hover);
+  r.setProperty("--lvl-grad1",t.grad1); r.setProperty("--lvl-grad2",t.grad2);
+  document.body.style.backgroundColor=t.bg;
+  document.getElementById("level-indicator").textContent=`Level ${i+1} · ${t.name}`;
+}
+
+function renderPips(results){
+  const track=document.getElementById("pip-track");
+  track.innerHTML="";
+  for(let i=0;i<10;i++){
+    const pip=document.createElement("div");
+    pip.className="pip";
+    if(i<results.length) pip.classList.add(results[i]?"done-correct":"done-wrong");
+    else if(i===results.length) pip.classList.add("current");
+    track.appendChild(pip);
+  }
+}
+
+function startLevel(lvlIdx,reshuffle){
+  currentLevel=lvlIdx;
+  applyTheme(lvlIdx);
+  levelDeck=reshuffle?shuffle([...levelDeck]):shuffle([...LEVELS[lvlIdx].cards]);
+  cardIndex=0; levelCorrect=0; levelWrong=0; seenAnswers=new Set();
+  pipResults.length=0;
+  document.getElementById("sc-correct").textContent=0;
+  document.getElementById("sc-wrong").textContent=0;
+  document.getElementById("game-area").style.display="flex";
+  document.getElementById("summary").className="summary";
+  renderPips([]);
+  renderCard();
+}
+
+function buildLetterCard(entry,optionCount){
+  const chars=[...entry.danish],lower=chars.map(c=>c.toLowerCase());
+  const roll=Math.random();
+  let pool=roll<.33?VOWELS:roll<.66?CONSONANTS:ALL_ALPHA;
+  let eligIdx=lower.map((c,i)=>pool.includes(c)?i:-1).filter(i=>i>=0);
+  if(!eligIdx.length){pool=ALL_ALPHA;eligIdx=lower.map((c,i)=>ALL_ALPHA.includes(c)?i:-1).filter(i=>i>=0);}
+  const hideIdx=eligIdx[Math.floor(Math.random()*eligIdx.length)];
+  const hiddenChar=lower[hideIdx];
+  const distPool=pool.filter(c=>c!==hiddenChar);
+  const choices=shuffle([hiddenChar,...shuffle(distPool).slice(0,optionCount-1)]);
+  const display=chars.map((c,i)=>i===hideIdx?null:c);
+  return{hiddenChar,display,choices};
+}
+
+function setWide(wide){
+  document.getElementById("card").classList.toggle("reading-card",wide);
+  ["choices","progress-wrap"].forEach(id=>document.getElementById(id).classList.toggle("wide",wide));
+}
+
+function renderCard(){
+  answered=false;
+  const entry=levelDeck[cardIndex];
+  const optCount=LEVELS[currentLevel].optionCount;
+  const isWide=entry.type==="reading";
+  const cardEl=document.getElementById("card");
+  const badgeEl=document.getElementById("card-badge");
+  const labelEl=document.getElementById("card-label");
+  const wordEl=document.getElementById("card-word");
+  const hintEl=document.getElementById("card-hint");
+  const choicesEl=document.getElementById("choices");
+  const msgEl=document.getElementById("result-msg");
+
+  cardEl.style.animation="none"; void cardEl.offsetWidth; cardEl.style.animation="";
+
+  const pct=Math.round((cardIndex/10)*100);
+  document.getElementById("prog-fill").style.width=pct+"%";
+  document.getElementById("prog-label").textContent=`Card ${cardIndex+1} of 10`;
+  msgEl.textContent=""; msgEl.className="result-msg";
+  document.getElementById("next-btn").className="next-btn";
+  choicesEl.innerHTML="";
+  cardEl.querySelectorAll(".reading-passage,.reading-question").forEach(e=>e.remove());
+  wordEl.style.display=""; hintEl.style.display="";
+  setWide(isWide);
+  choicesEl.classList.toggle("cols-2",optCount>=8);
+
+  if(entry.type==="translate"){
+    badgeEl.textContent="Translate"; badgeEl.className="card-type-badge badge-translate";
+    labelEl.textContent="Danish → English";
+    wordEl.className="card-word "+(entry.danish.includes(" ")?"phrase":"single");
+    wordEl.innerHTML=entry.danish; hintEl.textContent=entry.hint||"";
+    const allEng=LEVELS.flatMap(l=>l.cards.filter(c=>c.english).map(c=>c.english));
+    const uniq=[...new Set(allEng)];
+    const pool=uniq.filter(e=>e!==entry.english&&!seenAnswers.has(e));
+    const fallback=uniq.filter(e=>e!==entry.english);
+    const src=pool.length>=optCount-1?pool:fallback;
+    const choices=shuffle([entry.english,...shuffle(src).slice(0,optCount-1)]);
+    renderChoices(choicesEl,choices,entry.english,()=>seenAnswers.add(entry.english));
+  }
+  else if(entry.type==="letter"){
+    const{hiddenChar,display,choices}=buildLetterCard(entry,optCount);
+    badgeEl.textContent="Missing Letter"; badgeEl.className="card-type-badge badge-letter";
+    labelEl.textContent="Which letter is missing?";
+    wordEl.className="card-word single";
+    wordEl.innerHTML=display.map(c=>c===null?`<span class="blank-underline">&nbsp;</span>`:c).join("");
+    hintEl.textContent=entry.hint||`"${entry.english}" in Danish`;
+    renderChoices(choicesEl,choices,hiddenChar,null);
+  }
+  else if(entry.type==="sentence"){
+    badgeEl.textContent="Fill the Blank"; badgeEl.className="card-type-badge badge-sentence";
+    labelEl.textContent="Choose the missing word";
+    wordEl.className="card-word sentence";
+    const parts=entry.template.split("___");
+    wordEl.innerHTML=parts[0]+`<span class="blank-underline">&nbsp;&nbsp;</span>`+(parts[1]||"");
+    hintEl.textContent=entry.hint||"";
+    const choices=shuffle([entry.blank,...shuffle(entry.distractors).slice(0,optCount-1)]);
+    renderChoices(choicesEl,choices,entry.blank,null);
+  }
+  else if(entry.type==="reading"){
+    badgeEl.textContent="Read & Understand"; badgeEl.className="card-type-badge badge-reading";
+    labelEl.textContent="Read the passage, then answer";
+    wordEl.style.display="none"; hintEl.style.display="none";
+    const passageEl=document.createElement("div");
+    passageEl.className="reading-passage";
+    passageEl.innerHTML=entry.passage.split(". ").map((s,i,a)=>i<a.length-1?s+".":s).join("<br>");
+    cardEl.appendChild(passageEl);
+    const qEl=document.createElement("div");
+    qEl.className="reading-question"; qEl.textContent=entry.question;
+    cardEl.appendChild(qEl);
+    const choices=shuffle([entry.answer,...shuffle(entry.distractors).slice(0,optCount-1)]);
+    renderChoices(choicesEl,choices,entry.answer,null);
+  }
+}
+
+function renderChoices(container,choices,correct,onReveal){
+  choices.forEach((choice,i)=>{
+    const btn=document.createElement("button");
+    btn.className="choice-btn";
+    btn.innerHTML=`<span class="choice-letter">${ALPHA_LABELS[i]}</span>${choice}`;
+    btn.onclick=()=>handleAnswer(btn,choice,correct,onReveal);
+    container.appendChild(btn);
+  });
+}
+
+function handleAnswer(clickedBtn,chosen,correctAnswer,onReveal){
+  if(answered)return;
+  answered=true;
+  if(onReveal)onReveal();
+  document.querySelectorAll(".choice-btn").forEach(btn=>{
+    btn.disabled=true;
+    const text=btn.querySelector(".choice-letter").nextSibling.textContent.trim();
+    if(text===correctAnswer&&btn!==clickedBtn)btn.classList.add("correct");
+  });
+  const isCorrect=chosen===correctAnswer;
+  const msg=document.getElementById("result-msg");
+  if(isCorrect){
+    clickedBtn.classList.add("correct");
+    levelCorrect++; totalCorrect++;
+    document.getElementById("sc-correct").textContent=levelCorrect;
+    msg.textContent="✓ Correct!"; msg.className="result-msg show-correct";
+  } else {
+    clickedBtn.classList.add("wrong");
+    levelWrong++; totalWrong++;
+    document.getElementById("sc-wrong").textContent=levelWrong;
+    msg.textContent=`✗ Answer: ${correctAnswer}`; msg.className="result-msg show-wrong";
+  }
+  pipResults[cardIndex]=isCorrect;
+  renderPips(pipResults.slice(0,cardIndex+1));
+  const isReading=levelDeck[cardIndex].type==="reading";
+  document.getElementById("next-btn").className="next-btn"+(isReading?" wide":"")+" visible";
+}
+
+function nextCard(){
+  cardIndex++;
+  if(cardIndex>=10)endLevel();
+  else renderCard();
+}
+
+function endLevel(){
+  document.getElementById("prog-fill").style.width="100%";
+  document.getElementById("prog-label").textContent="10 of 10";
+  renderPips(pipResults.slice(0,10));
+  const passed=levelCorrect>=9;
+  const isLast=currentLevel===LEVELS.length-1;
+  const overlay=document.createElement("div");
+  overlay.className="overlay";
+  const box=document.createElement("div");
+  box.className="overlay-box";
+  box.innerHTML=passed?`
+    <div class="overlay-icon">${isLast?"🏆":"⭐"}</div>
+    <div class="overlay-title">${isLast?"Course Complete!":"Level Passed!"}</div>
+    <div class="overlay-score pass">${levelCorrect}/10</div>
+    <div class="overlay-sub">${isLast?"You've reached Mastery. Exceptional work!":"You scored "+levelCorrect+"/10. On to Level "+(currentLevel+2)+"!"}</div>
+  `:`
+    <div class="overlay-icon">🔁</div>
+    <div class="overlay-title">Not quite!</div>
+    <div class="overlay-score fail">${levelCorrect}/10</div>
+    <div class="overlay-sub">You need 9 or more to advance. Same cards, reshuffled — try again!</div>
+  `;
+  const btn=document.createElement("button");
+  btn.className="overlay-btn";
+  if(passed&&!isLast){
+    btn.textContent="Next Level →";
+    btn.onclick=()=>{overlay.remove();pipResults.length=0;startLevel(currentLevel+1,false);};
+  } else if(passed&&isLast){
+    btn.textContent="See Final Score";
+    btn.onclick=()=>{overlay.remove();showFinalSummary();};
+  } else {
+    btn.textContent="Try Again";
+    btn.onclick=()=>{
+      overlay.remove();
+      document.getElementById("sc-correct").textContent=0;
+      document.getElementById("sc-wrong").textContent=0;
+      startLevel(currentLevel,true);
+    };
+  }
+  box.appendChild(btn);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function showFinalSummary(){
+  document.getElementById("game-area").style.display="none";
+  const total=totalCorrect+totalWrong;
+  const pct=total>0?Math.round((totalCorrect/total)*100):0;
+  document.getElementById("final-pct").textContent=pct+"%";
+  document.getElementById("sum-correct").textContent=totalCorrect;
+  document.getElementById("sum-wrong").textContent=totalWrong;
+  document.getElementById("summary").className="summary show";
+}
+
+function restartAll(){
+  totalCorrect=0; totalWrong=0; pipResults.length=0;
+  document.getElementById("summary").className="summary";
+  startLevel(0,false);
+}
+
+startLevel(0,false);
+</script>
+</body>
+</html>
